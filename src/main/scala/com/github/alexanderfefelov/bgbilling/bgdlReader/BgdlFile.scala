@@ -4,9 +4,76 @@ import scodec._
 import codecs._
 import scodec.bits._
 
-case class BgdlFile(header: BgdlHeader, params: Vector[BgdlParam])
+case class BgdlFile(header: Header, params: Vector[Param]) {
 
-case class BgdlHeader(magic: String, version: Long, typ: Long) {
+  def finished: Byte = {
+    params.find(_.typ.typ == PARAM_TYPE_FINISHED) match {
+      case Some(param) => param.value(0)
+    }
+  }
+
+  def buffer: Buffer = {
+    params.find(_.typ.typ == PARAM_TYPE_BUFFER) match {
+      case Some(param) =>
+        // First byte: type
+        // Four bytes: chunk size
+        Buffer(
+          param.value(0),
+          param.value.takeRight(4).toInt()
+        )
+    }
+  }
+
+  def compression: Compression = {
+    params.find(_.typ.typ == PARAM_TYPE_COMPRESSION) match {
+      case Some(param) =>
+        // First byte: type
+        // Second byte: level
+        // Third byte: strategy
+        Compression(
+          param.value(0),
+          param.value(1),
+          param.value(2)
+        )
+    }
+  }
+
+  def distributed: Byte = {
+    params.find(_.typ.typ == PARAM_TYPE_DISTRIBUTED) match {
+      case Some(param) => param.value(0)
+    }
+  }
+
+  def streaming: Byte = {
+    params.find(_.typ.typ == PARAM_TYPE_STREAMING) match {
+      case Some(param) => param.value(0)
+    }
+  }
+
+  def ipDataLogType: IpDataLogType = {
+    params.find(_.typ.typ == PARAM_TYPE_IP_DATALOG_TYPE) match {
+      case Some(param) =>
+        // First byte: type
+        // Second byte: subtype
+        // Third byte: subtype version
+        IpDataLogType(
+          param.value(0),
+          param.value(1),
+          param.value(2)
+        )
+    }
+  }
+
+  def netFlowV9Template: Option[ByteVector] = {
+    params.find(_.typ.typ == PARAM_TYPE_NETFLOW_V9_TEMPLATE) match {
+      case Some(param) => Some(param.value)
+      case _ => None
+    }
+  }
+
+}
+
+case class Header(magic: String, version: Long, typ: Long) {
 
   require(magic == "BGDL", "magic not found")
   require(version == 4, "unsupported DataLog version")
@@ -14,54 +81,45 @@ case class BgdlHeader(magic: String, version: Long, typ: Long) {
 
 }
 
-case class BgdlParam(typ: ParamType, value: ByteVector)
+case class Param(typ: ParamType, value: ByteVector)
 
 case class ParamType(typ: Long) {
 
   override def toString: String = typ match {
-    case 3 => "Finished"
-
-    // First byte: 0 - none, 1 - chunked
-    // Four bytes: chunk size
-    case 4 => "Buffer"
-
-    // First byte: 1 - zlib, 2 - gzip, 3 - xz
-    // Second byte: level
-    // Third byte: strategy
-    case 5 => "Compression"
-
-    case 6 => "Distributed"
-    case 7 => "Streaming"
-
-    // First byte: 0 - raw, 1 - NetFlow, 2 - sFlow, 3 - SNMP, 4 - NetFlow v9
-    // Second byte: subtype
-    // Third byte: subtype version
-    case 100 => "IP DataLog Type"
-
-    case 110 => "NetFlow v9 Template"
+    case PARAM_TYPE_FINISHED => "Finished"
+    case PARAM_TYPE_BUFFER => "Buffer"
+    case PARAM_TYPE_COMPRESSION => "Compression"
+    case PARAM_TYPE_DISTRIBUTED => "Distributed"
+    case PARAM_TYPE_STREAMING => "Streaming"
+    case PARAM_TYPE_IP_DATALOG_TYPE => "IP DataLog Type"
+    case PARAM_TYPE_NETFLOW_V9_TEMPLATE => "NetFlow v9 Template"
     case _ => "UNKNOWN"
   }
 
 }
 
+case class Buffer(typ: Byte, chunkSize: Int)
+case class Compression(typ: Byte, level: Byte, strategy: Byte)
+case class IpDataLogType(typ: Byte, subType: Byte, subTypeVersion: Byte)
+
 object BgdlFile {
 
   implicit val paramType: Codec[ParamType] = uint32.xmap(ParamType.apply, _.typ)
 
-  implicit val bgdlParam: Codec[BgdlParam] = (
-    paramType ::
-    variableSizeBytesLong(uint32, bytes)
-  ).as[BgdlParam]
+  implicit val bgdlParam: Codec[Param] = (
+    ("typ"   | paramType) ::
+    ("value" | variableSizeBytesLong(uint32, bytes))
+  ).as[Param]
 
-  implicit val bgdlHeader: Codec[BgdlHeader] = (
-    fixedSizeBytes(4, ascii) ::
-    uint32 ::
-    uint32
-  ).as[BgdlHeader]
+  implicit val bgdlHeader: Codec[Header] = (
+    ("magic"   | fixedSizeBytes(4, ascii)) ::
+    ("version" | uint32) ::
+    ("typ"     | uint32)
+  ).as[Header]
 
   implicit val bgdlFile: Codec[BgdlFile] = (
-    bgdlHeader ::
-    variableSizeBytesLong(uint32, vector(bgdlParam))
+    ("header" | bgdlHeader) ::
+    ("params" | variableSizeBytesLong(uint32, vector(bgdlParam)))
   ).as[BgdlFile]
 
 }

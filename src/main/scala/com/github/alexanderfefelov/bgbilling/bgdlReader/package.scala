@@ -1,0 +1,27 @@
+package com.github.alexanderfefelov.bgbilling
+
+package object bgdlReader {
+
+  val PARAM_TYPE_FINISHED = 3
+  val PARAM_TYPE_BUFFER = 4
+  val PARAM_TYPE_COMPRESSION = 5
+  val PARAM_TYPE_DISTRIBUTED = 6
+  val PARAM_TYPE_STREAMING = 7
+  val PARAM_TYPE_IP_DATALOG_TYPE = 100
+  val PARAM_TYPE_NETFLOW_V9_TEMPLATE = 110
+
+  val BUFFER_NONE = 0
+  val BUFFER_CHUNKED = 1
+
+  val COMPRESSION_NONE = 0
+  val COMPRESSION_ZLIB = 1
+  val COMPRESSION_GZIP = 2
+  val COMPRESSION_XZ = 3
+
+  val IP_DATALOG_TYPE_RAW = 0
+  val IP_DATALOG_TYPE_NETFLOW = 1
+  val IP_DATALOG_TYPE_SFLOW = 2
+  val IP_DATALOG_TYPE_SNMP = 3
+  val IP_DATALOG_TYPE_NETFLOW_V9 = 4
+
+}
