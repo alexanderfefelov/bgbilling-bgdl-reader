@@ -6,9 +6,9 @@ import scodec.bits._
 
 case class BgdlFile(header: Header, params: Vector[Param]) {
 
-  def finished: Byte = {
+  def finished: Boolean = {
     params.find(_.typ.typ == PARAM_TYPE_FINISHED) match {
-      case Some(param) => param.value(0)
+      case Some(param) => param.value(0) > 0
     }
   }
 
@@ -38,15 +38,15 @@ case class BgdlFile(header: Header, params: Vector[Param]) {
     }
   }
 
-  def distributed: Byte = {
+  def distributed: Boolean = {
     params.find(_.typ.typ == PARAM_TYPE_DISTRIBUTED) match {
-      case Some(param) => param.value(0)
+      case Some(param) => param.value(0) > 0
     }
   }
 
-  def streaming: Byte = {
+  def streaming: Boolean = {
     params.find(_.typ.typ == PARAM_TYPE_STREAMING) match {
-      case Some(param) => param.value(0)
+      case Some(param) => param.value(0) > 0
     }
   }
 
@@ -75,9 +75,9 @@ case class BgdlFile(header: Header, params: Vector[Param]) {
 
 case class Header(magic: String, version: Long, typ: Long) {
 
-  require(magic == "BGDL", "magic not found")
+  require(magic == DATALOG_MAGIC, "magic not found")
   require(version == 4, "unsupported DataLog version")
-  require(typ == 1, "unsupported DataLog type")
+  require(typ == DATALOG_TYPE_IP, "unsupported DataLog type")
 
 }
 
@@ -112,7 +112,7 @@ object BgdlFile {
   ).as[Param]
 
   implicit val bgdlHeader: Codec[Header] = (
-    ("magic"   | fixedSizeBytes(4, ascii)) ::
+    ("magic"   | fixedSizeBytes(DATALOG_MAGIC.length, ascii)) ::
     ("version" | uint32) ::
     ("typ"     | uint32)
   ).as[Header]

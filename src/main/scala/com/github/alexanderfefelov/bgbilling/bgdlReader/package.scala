@@ -2,6 +2,10 @@ package com.github.alexanderfefelov.bgbilling
 
 package object bgdlReader {
 
+  val DATALOG_MAGIC = "BGDL"
+
+  val DATALOG_TYPE_IP = 1
+
   val PARAM_TYPE_FINISHED = 3
   val PARAM_TYPE_BUFFER = 4
   val PARAM_TYPE_COMPRESSION = 5
