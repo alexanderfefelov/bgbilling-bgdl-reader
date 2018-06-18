@@ -19,7 +19,7 @@ case class BgdlFile(header: Header, params: Vector[Param]) {
         // Four bytes: chunk size
         Buffer(
           param.value(0),
-          param.value.takeRight(4).toInt()
+          param.value.drop(1).take(4).toInt()
         )
     }
   }

@@ -16,18 +16,19 @@ object Main extends App {
   }
 
   private def justDoIt(config: Config): Unit = {
-    val bgdlFile = File(config.bgdlFile.getAbsolutePath)
-    if (!bgdlFile.exists || !bgdlFile.isRegularFile || !bgdlFile.isReadable) {
-      println(s"Error: $bgdlFile doesn't exist, or is not a regular file, or is not readable")
+    val f = File(config.bgdlFile.getAbsolutePath)
+    if (!f.exists || !f.isRegularFile || !f.isReadable) {
+      println(s"Error: $f doesn't exist, or is not a regular file, or is not readable")
       return
     }
-    println(s".bgdl file: $bgdlFile")
+    println(s".bgdl file: $f")
 
-    val bgdlBits = BitVector(bgdlFile.loadBytes)
-    val bgdlDecoded = Codec[BgdlFile].decode(bgdlBits).require.value
+    val bgdlBits = BitVector(f.loadBytes)
+    val bgdlFile = Codec[BgdlFile].decode(bgdlBits).require.value
 
-    println(bgdlDecoded.header)
-    bgdlDecoded.params.foreach(println)
+    println(bgdlFile.header)
+    bgdlFile.params.foreach(println)
+
   }
 
 }
